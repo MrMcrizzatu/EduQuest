@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('support') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('support') }}</h1>
+    <p>{{ t('support_desc') }}</p>
+  </div>
+  <div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h2>{{ t('contact_us') }}</h2>
+    <p>{{ t('support_mail_text') }} <a href="mailto:eduquestalert@gmail.com" style="color: var(--primary); font-weight: 600;">eduquestalert@gmail.com</a>.</p>
+    <p style="color: var(--muted-foreground); margin-top: 1rem;">{{ t('support_response_time') }}</p>
+
+    <div style="margin-top: 2rem; padding: 1.5rem; background: var(--accent); border-radius: var(--radius-lg);">
+      <h3 style="margin-top: 0;">{{ t('support_letter_title') }}</h3>
+      <ul style="margin: 0; padding-left: 1.5rem;">
+        <li>{{ t('support_problem_desc') }}</li>
+        <li>{{ t('support_steps') }}</li>
+        <li>{{ t('support_screenshots') }}</li>
+        <li>{{ t('support_user_id') }}</li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ t('my_learning') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('my_learning') }}</h1>
+    <p>{{ t('my_learning_desc') }}</p>
+  </div>
+
+  <h2>{{ t('in_progress') }} ({{ in_progress|length }})</h2>
+  {% if in_progress %}
+    <div class="materials-grid">
+      {% for m in in_progress %}
+        <a class="material-card" href="{{ url_for('material_view', material_id=m.material_id) }}">
+          {% if m.material_image_path %}
+            <img class="material-thumb" src="{{ m.material_image_path }}" alt="{{ m.material_title }}" />
+          {% else %}
+            <div class="material-thumb-placeholder">{{ t('no_image') }}</div>
+          {% endif %}
+          <div class="material-body">
+            <h3 class="material-title">{{ m.material_title }}</h3>
+            <div class="material-author">{{ m.author_name }}</div>
+            <div class="material-meta">
+              <span class="meta-item">{{ t('current_step') }}: {{ m.progress_step + 1 }}</span>
+              <span class="meta-item">{{ m.progress_updated_at|ago }}</span>
+              <span class="meta-item">
+                {{ material_type_label(m.material_type) }}
+              </span>
+              <span class="meta-item difficulty-badge difficulty-{{ m.material_difficulty }}">
+                {{ difficulty_label(m.material_difficulty) }}
+              </span>
+            </div>
+          </div>
+          <div class="material-foot">
+            <span>
+              {% if m.top_name %}{{ category_label(m.top_slug, m.top_name) }}{% if m.sub_name %} · {{ category_label(m.sub_slug, m.sub_name) }}{% endif %}
+              {% else %}{{ t('no_category') }}{% endif %}
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>{{ t('empty_in_progress') }}</p>
+    </div>
+  {% endif %}
+
+  <h2 style="margin-top: 2rem;">{{ t('completed') }} ({{ completed|length }})</h2>
+  {% if completed %}
+    <div class="materials-grid">
+      {% for m in completed %}
+        <a class="material-card" href="{{ url_for('material_view', material_id=m.material_id) }}">
+          {% if m.material_image_path %}
+            <img class="material-thumb" src="{{ m.material_image_path }}" alt="{{ m.material_title }}" />
+          {% else %}
+            <div class="material-thumb-placeholder">{{ t('no_image') }}</div>
+          {% endif %}
+          <div class="material-body">
+            <h3 class="material-title">{{ m.material_title }}</h3>
+            <div class="material-author">{{ m.author_name }}</div>
+            <div class="material-meta">
+              <span class="meta-item">{{ t('completed_status') }}</span>
+              <span class="meta-item">{{ m.progress_updated_at|ago }}</span>
+              <span class="meta-item">
+                {{ material_type_label(m.material_type) }}
+              </span>
+              <span class="meta-item difficulty-badge difficulty-{{ m.material_difficulty }}">
+                {{ difficulty_label(m.material_difficulty) }}
+              </span>
+            </div>
+          </div>
+          <div class="material-foot">
+            <span>
+              {% if m.top_name %}{{ category_label(m.top_slug, m.top_name) }}{% if m.sub_name %} · {{ category_label(m.sub_slug, m.sub_name) }}{% endif %}
+              {% else %}{{ t('no_category') }}{% endif %}
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <p>{{ t('empty_completed') }}</p>
+      <a class="btn btn-primary" href="{{ url_for('home') }}">{{ t('go_to_materials') }}</a>
+    </div>
+  {% endif %}
+{% endblock %}

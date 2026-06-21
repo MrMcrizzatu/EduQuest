@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% block title %}{{ t('profile') }} — EduQuest{% endblock %}
+
+{% block content %}
+  {% if active_theme_data %}
+  <style>
+    body {
+      background: {{ active_theme_data.bg }} !important;
+    }
+    .profile-card, .streak-card, .rewards-summary, .tabs-card, .activity-card, .pending-card {
+      background: {{ active_theme_data.panel or 'var(--card)' }} !important;
+    }
+    {% if active_theme_data.text %}
+    .profile-card, .profile-card *, .streak-card, .streak-card *, .rewards-summary, .rewards-summary *, .tabs-card, .tabs-card *, .activity-card, .activity-card *, .pending-card, .pending-card * {
+      color: {{ active_theme_data.text }} !important;
+    }
+    .showcase-item {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(0, 0, 0, 0.5){% else %}rgba(0, 0, 0, 0.2){% endif %} !important;
+      color: {{ active_theme_data.text }} !important;
+      border: 1px solid {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.4){% else %}rgba(0, 0, 0, 0.3){% endif %} !important;
+    }
+    .achievement {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.08){% else %}rgba(100, 100, 100, 0.2){% endif %} !important;
+      color: {{ active_theme_data.text }} !important;
+      border-color: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .achievement * {
+      color: {{ active_theme_data.text }} !important;
+    }
+    .achievement.earned {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .achievement-tag {
+      background: rgba(34, 197, 94, 0.2) !important;
+      color: #4ade80 !important;
+    }
+    .rs-bar {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .activity-item {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.08){% else %}rgba(100, 100, 100, 0.2){% endif %} !important;
+      border-color: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .activity-icon {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .tab-btn {
+      color: {{ active_theme_data.text }} !important;
+      border-color: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.2){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    .tab-btn.active {
+      background: {% if active_theme_data.text == '#ffffff' %}rgba(255, 255, 255, 0.15){% else %}rgba(100, 100, 100, 0.3){% endif %} !important;
+    }
+    {% else %}
+    /* Keep light profile themes readable while the site uses dark mode */
+    body[data-theme="dark"] .profile-card,
+    body[data-theme="dark"] .streak-card,
+    body[data-theme="dark"] .rewards-summary,
+    body[data-theme="dark"] .tabs-card,
+    body[data-theme="dark"] .activity-card,
+    body[data-theme="dark"] .pending-card {
+      color: #212529 !important;
+    }
+    body[data-theme="dark"] .profile-card *,
+    body[data-theme="dark"] .streak-card *,
+    body[data-theme="dark"] .rewards-summary *,
+    body[data-theme="dark"] .activity-card *,
+    body[data-theme="dark"] .pending-card * {
+      color: #212529 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+    body[data-theme="dark"] .tabs-card * {
+      color: #212529 !important;
+    }
+    body[data-theme="dark"] .showcase-item {
+      background: rgba(0, 0, 0, 0.2) !important;
+      color: #212529 !important;
+      border: 1px solid rgba(0, 0, 0, 0.3) !important;
+    }
+    body[data-theme="dark"] .achievement {
+      color: #212529 !important;
+      background: rgba(0, 0, 0, 0.05) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    body[data-theme="dark"] .achievement * {
+      color: #212529 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+    body[data-theme="dark"] .achievement.earned {
+      background: rgba(0, 0, 0, 0.08) !important;
+    }
+    body[data-theme="dark"] .achievement-icon {
+      background: transparent !important;
+    }
+    body[data-theme="dark"] .activity-item {
+      background: rgba(0, 0, 0, 0.05) !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    body[data-theme="dark"] .activity-item * {
+      background: transparent !important;
+      border: none !important;
+    }
+    body[data-theme="dark"] .activity-icon {
+      background: rgba(0, 0, 0, 0.08) !important;
+    }
+    body[data-theme="dark"] .tab-btn {
+      color: #212529 !important;
+      background: transparent !important;
+      border: none !important;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.2) !important;
+    }
+    body[data-theme="dark"] .tab-btn.active {
+      background: rgba(0, 0, 0, 0.08) !important;
+      border: none !important;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.3) !important;
+    }
+    body[data-theme="dark"] .rs-bar {
+      background: rgba(0, 0, 0, 0.1) !important;
+      border: none !important;
+    }
+    {% endif %}
+  </style>
+  {% endif %}
+  <div class="profile-grid">
+    <div>
+      <div class="profile-card">
+        <div class="avatar-wrap">
+          {% if active_frame and 'gradient' in active_frame %}
+            <div style="padding: 4px; border-radius: 50%; background: {{ active_frame }}; width: 104px; height: 104px; margin: 0 auto; display: flex; align-items: center; justify-content: center; {% if active_frame_data and active_frame_data.glow %}box-shadow: {{ active_frame_data.glow }};{% endif %}">
+              <div class="avatar avatar-lg" style="margin: 0; width: 96px; height: 96px;">
+                {% if user.user_avatar_path %}
+                  <img src="{{ user.user_avatar_path }}" alt="{{ user.user_full_name }}" />
+                {% else %}
+                  {{ user.user_full_name|avatar_initials }}
+                {% endif %}
+              </div>
+            </div>
+          {% elif active_frame %}
+            <div class="avatar avatar-lg" style="margin: 0 auto; border: 4px solid {{ active_frame }}; {% if active_frame_data and active_frame_data.glow %}box-shadow: {{ active_frame_data.glow }};{% endif %}">
+              {% if user.user_avatar_path %}
+                <img src="{{ user.user_avatar_path }}" alt="{{ user.user_full_name }}" />
+              {% else %}
+                {{ user.user_full_name|avatar_initials }}
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="avatar avatar-lg" style="margin: 0 auto;">
+              {% if user.user_avatar_path %}
+                <img src="{{ user.user_avatar_path }}" alt="{{ user.user_full_name }}" />
+              {% else %}
+                {{ user.user_full_name|avatar_initials }}
+              {% endif %}
+            </div>
+          {% endif %}
+
+        </div>
+        <div class="profile-name">
+          {{ user.user_full_name }}
+          {% if active_badge %}
+            <span style="margin-left: 0.5rem; font-size: 1.2rem;">{{ active_badge }}</span>
+          {% endif %}
+          {% if active_earned_badge %}
+            <span style="margin-left: 0.5rem; font-size: 1.2rem;">
+              {% set icon = active_earned_badge.badge_icon %}
+              {% if icon == 'spark' %}✨
+              {% elif icon == 'graduate' %}🎓
+              {% elif icon == 'crown' %}👑
+              {% elif icon == 'book' %}📖
+              {% elif icon == 'library' %}📚
+              {% elif icon == 'pen' %}✏️
+              {% elif icon == 'factory' %}🏭
+              {% elif icon == 'zap' %}⚡
+              {% elif icon == 'flame' %}🔥
+              {% else %}⭐
+              {% endif %}
+            </span>
+          {% endif %}
+        </div>
+        <div class="profile-id">User ID: {{ user.user_id }} {% if is_profile_moderator %}<span style="color: var(--primary); font-weight: bold; margin-left: 0.5rem;">({{ t('moderator_label') }})</span>{% endif %}</div>
+
+        {% if is_moderator %}
+          <div style="margin: 0.5rem 0;">
+            <a class="btn btn-primary btn-sm" href="{{ url_for('moderation_page') }}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              {{ t('moderation_view') }}
+            </a>
+          </div>
+        {% endif %}
+
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span class="stat-key">{{ t('level') }}</span>
+            <span class="stat-num">{{ '***' if user.user_xp_hidden else level }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-key">XP</span>
+            <span class="stat-num">{{ '***' if user.user_xp_val_hidden else user.user_xp|nice_number }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-key">{{ t('rating') }}</span>
+            <span class="stat-num">{{ rating|nice_number }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-key">{{ t('position') }}</span>
+            <span class="stat-num">#{{ position or '—' }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-key">{{ t('created_materials') }}</span>
+            <span class="stat-num">{{ materials_count }}</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-key">{{ t('completed_materials') }}</span>
+            <span class="stat-num">{{ completed_count }}</span>
+          </div>
+        </div>
+
+        {% if not user.user_xp_hidden %}
+        <div class="level-progress">
+          <div class="lp-label">{{ t('level_progress') }}: {{ xp_in_level }} / {{ xp_per_level }} XP</div>
+          <div class="rs-bar">
+            <div class="rs-bar-fill" style="width: {{ (xp_in_level / xp_per_level * 100) if xp_per_level else 0 }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if user.user_streak_days is not none %}
+      <div class="streak-card">
+        <h3>{{ t('activity_streak') }}</h3>
+        <div class="streak-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#f97316" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+        </div>
+        <div class="streak-num">{{ user.user_streak_days }}</div>
+        <div class="streak-label">{{ t('days_in_row') }}</div>
+      </div>
+      {% endif %}
+
+      <div class="rewards-summary">
+        <h3>{{ t('rewards_stats') }}</h3>
+        {% if showcase_ach %}
+          <div style="margin-bottom: 1rem;">
+            <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">{{ t('favorite_achievements') }}</h4>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              {% for ach_id in showcase_ach %}
+                {% for a in achievements %}
+                  {% if a.achievement_id|string == ach_id and a.earned %}
+                    <div class="showcase-item" style="padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem;">{{ achievement_name(a) }}</div>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        {% if showcase_badges %}
+          <div style="margin-bottom: 1rem;">
+            <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">{{ t('favorite_badges') }}</h4>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              {% for badge_id in showcase_badges %}
+                {% for b in badges %}
+                  {% if b.badge_id|string == badge_id and b.earned %}
+                    <div class="showcase-item" style="padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem;">{{ badge_name(b) }}</div>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        <div class="rs-row">
+          <span>{{ t('achievements') }}</span>
+          <span>{{ earned_achievements }} / {{ total_achievements }}</span>
+        </div>
+        <div class="rs-bar">
+          <div class="rs-bar-fill" style="width: {{ (earned_achievements / total_achievements * 100) if total_achievements else 0 }}%"></div>
+        </div>
+        <div class="rs-row">
+          <span>{{ t('badges') }}</span>
+          <span>{{ earned_badges }} / {{ total_badges }}</span>
+        </div>
+        <div class="rs-bar">
+          <div class="rs-bar-fill" style="width: {{ (earned_badges / total_badges * 100) if total_badges else 0 }}%"></div>
+        </div>
+        <div class="rewards-remaining">
+          {{ t('remaining_rewards').format(count=(total_achievements - earned_achievements) + (total_badges - earned_badges)) }}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tabs-card">
+        <div class="tabs-bar">
+          <button type="button" class="tab-btn active" onclick="switchProfileTab('ach')">
+            {{ t('achievements') }} ({{ earned_achievements }}/{{ total_achievements }})
+          </button>
+          <button type="button" class="tab-btn" onclick="switchProfileTab('badges')">
+            {{ t('badges') }} ({{ earned_badges }}/{{ total_badges }})
+          </button>
+        </div>
+
+        <div id="tab-ach" class="tab-pane active">
+          <div class="achievements-grid">
+            {% for a in achievements %}
+              {% set color_class = '' %}
+              {% if a.earned %}
+                {% if a.achievement_color == 'green' %}{% set color_class = 'earned earned-green' %}
+                {% elif a.achievement_color == 'blue' %}{% set color_class = 'earned earned-blue' %}
+                {% elif a.achievement_color == 'purple' %}{% set color_class = 'earned earned-purple' %}
+                {% else %}{% set color_class = 'earned earned-yellow' %}
+                {% endif %}
+              {% endif %}
+              <div class="achievement {{ color_class }}">
+                <div class="achievement-icon">
+                  {% include "_icon.html" %}
+                </div>
+                <div class="achievement-name">{{ achievement_name(a) }}</div>
+                <div class="achievement-desc">{{ achievement_desc(a) }}</div>
+                {% if a.earned %}
+                  <div class="achievement-tag">{{ t('earned_status') }}</div>
+                {% elif a.achievement_requirement and a.achievement_requirement > 0 %}
+                  <div class="achievement-progress">
+                    <div class="progress-text">{{ t('progress_label') }}: {{ a.user_progress or 0 }} / {{ a.achievement_requirement }}</div>
+                    <div class="rs-bar" style="margin-top: 0.25rem;">
+                      <div class="rs-bar-fill" style="width: {{ ((a.user_progress or 0) / a.achievement_requirement * 100) if a.achievement_requirement else 0 }}%; background-color: var(--primary);"></div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div id="tab-badges" class="tab-pane">
+          <div class="achievements-grid">
+            {% for b in badges %}
+              <div class="achievement {% if b.earned %}earned earned-yellow{% endif %}">
+                <div class="achievement-icon">
+                  {% set icon = b.badge_icon %}
+                  {% include "_badge_icon.html" %}
+                </div>
+                <div class="achievement-name">{{ badge_name(b) }}</div>
+                <div class="achievement-desc">{{ badge_desc(b) }}</div>
+                {% if b.earned %}
+                  <div class="achievement-tag">{{ t('earned_badge_status') }}</div>
+                {% elif b.badge_requirement and b.badge_requirement > 0 %}
+                  <div class="achievement-progress">
+                    <div class="progress-text">{{ t('progress_label') }}: {{ b.user_progress or 0 }} / {{ b.badge_requirement }}</div>
+                    <div class="rs-bar" style="margin-top: 0.25rem;">
+                      <div class="rs-bar-fill" style="width: {{ ((b.user_progress or 0) / b.badge_requirement * 100) if b.badge_requirement else 0 }}%; background-color: var(--primary);"></div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      {% if is_own_profile and pending_materials %}
+      <div class="pending-card" style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-top: 1rem;">
+        <h3 style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          {{ t('pending_publications') }}
+        </h3>
+        <div id="pending-list">
+          {% for pm in pending_materials %}
+            <div class="pending-item" {% if loop.index > 3 %}data-hidden-pending="true"{% endif %} style="display: {% if loop.index > 3 %}none{% else %}flex{% endif %}; align-items: center; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: var(--secondary); border-radius: var(--radius-md); flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 200px;">
+                <div style="font-weight: 600;">{{ pm.material_title }}</div>
+                <div style="font-size: 0.8rem; color: var(--muted-foreground);">
+                  {{ material_type_label(pm.material_type) }}
+                  {% if pm.top_name %} · {{ category_label(pm.top_slug, pm.top_name) }}{% endif %}
+                  {% if pm.sub_name %} · {{ category_label(pm.sub_slug, pm.sub_name) }}{% endif %}
+                  · {{ pm.material_created_at|ago }}
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                <a class="btn btn-outline btn-sm" href="{{ url_for('edit_material', material_id=pm.material_id) }}">{{ t('edit') }}</a>
+                <form method="post" action="{{ url_for('delete_material_route', material_id=pm.material_id) }}" style="display: inline;">
+                  <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm({{ t('delete_material_question')|tojson }})">{{ t('delete') }}</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        {% if pending_materials|length > 3 %}
+          <div style="text-align: center; margin-top: 0.75rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="pending-toggle-btn" onclick="togglePendingList()">{{ t('show_all') }} ({{ pending_materials|length }})</button>
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="activity-card">
+        <h3>{{ t('recent_activity') }}</h3>
+        {% if activity %}
+          <div class="activity-list" id="activity-list">
+            {% for act in activity %}
+              <div class="activity-item" {% if loop.index > 3 %}style="display: none;" data-hidden-activity="true"{% endif %}>
+                <div class="activity-icon">
+                  {% set icon = act.activity_icon %}
+                  {% include "_badge_icon.html" %}
+                </div>
+                <div>
+                  <div class="activity-text">{{ act.activity_text }}</div>
+                  <div class="activity-time">{{ act.activity_created_at|ago }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% if activity|length > 3 %}
+            <div style="text-align: center; margin-top: 0.75rem;">
+              <button type="button" class="btn btn-outline btn-sm" id="activity-toggle-btn" onclick="toggleActivityList()">{{ t('show_full_count') }} ({{ activity|length }})</button>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="empty" style="padding: 1.5rem 1rem;">
+            <p>{{ t('recent_activity_empty') }}</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const profileText = {
+  hide: {{ t('hide')|tojson }},
+  showFull: {{ t('show_full_count')|tojson }},
+  showAll: {{ t('show_all')|tojson }}
+};
+
+function toggleActivityList() {
+  var items = document.querySelectorAll('[data-hidden-activity="true"]');
+  var btn = document.getElementById('activity-toggle-btn');
+  if (!items.length || !btn) return;
+  var isHidden = items[0].style.display === 'none';
+  items.forEach(function(item) {
+    item.style.display = isHidden ? '' : 'none';
+  });
+  btn.textContent = isHidden ? profileText.hide : profileText.showFull + ' ({{ activity|length }})';
+}
+
+function togglePendingList() {
+  var items = document.querySelectorAll('[data-hidden-pending="true"]');
+  var btn = document.getElementById('pending-toggle-btn');
+  if (!items.length || !btn) return;
+  var isHidden = items[0].style.display === 'none';
+  items.forEach(function(item) {
+    item.style.display = isHidden ? 'flex' : 'none';
+  });
+  btn.textContent = isHidden ? profileText.hide : profileText.showAll + ' ({{ pending_materials|length if pending_materials else 0 }})';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ t('not_found_title') }} — EduQuest{% endblock %}
+
+{% block content %}
+<div class="empty">
+  <h1>404</h1>
+  <h3>{{ t('not_found_title') }}</h3>
+  <p>{{ t('not_found_text') }}</p>
+  <a class="btn btn-primary" href="{{ url_for('home') }}">{{ t('home') }}</a>
+</div>
+{% endblock %}

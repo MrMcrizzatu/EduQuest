@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ t('topup_balance') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('topup_balance') }} eduCoin</h1>
+    <p>1 eduCoin = 1$</p>
+  </div>
+
+  <div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2>{{ t('choose_amount') }}</h2>
+    <form method="post" action="{{ url_for('topup_process') }}">
+      <div class="form-group">
+        <label class="form-label">{{ t('educoin_amount') }}</label>
+        <input type="number" name="amount" class="form-input" min="1" max="1000" value="10" required />
+        <span class="form-hint">{{ t('educoin_amount_hint') }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ t('card_number') }}</label>
+        <input type="text" id="card-number" class="form-input" placeholder="0000 0000 0000 0000" maxlength="19" />
+        <span class="form-hint">{{ t('card_stub_hint') }}</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('card_expiry') }}</label>
+          <input type="text" id="card-expiry" class="form-input" placeholder="MM/YY" maxlength="5" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">CVV</label>
+          <input type="text" id="card-cvv" class="form-input" placeholder="123" maxlength="3" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ t('card_name') }}</label>
+        <input type="text" class="form-input" placeholder="IVAN IVANOV" />
+      </div>
+
+      <div style="padding: 1rem; background: var(--accent); border-radius: var(--radius-md); margin-bottom: 1rem;">
+        <p style="margin: 0; font-size: 0.9rem; color: var(--accent-foreground);">
+          <strong>{{ t('attention') }}:</strong> {{ t('payment_demo_text') }}
+        </p>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">{{ t('topup_balance') }}</button>
+      <a href="{{ url_for('profile') }}" class="btn btn-outline btn-block" style="margin-top: 0.5rem;">{{ t('cancel') }}</a>
+    </form>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Format card number
+  document.getElementById('card-number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s/g, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    e.target.value = formattedValue;
+  });
+
+  // Format expiry date
+  document.getElementById('card-expiry').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2, 4);
+    }
+    e.target.value = value;
+  });
+
+  // Keep only digits for CVV
+  document.getElementById('card-cvv').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+  });
+</script>
+{% endblock %}

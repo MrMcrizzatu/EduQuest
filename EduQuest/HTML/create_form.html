@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_material %}{{ t('edit') }}{% else %}{{ t('create_material') }}{% endif %} — EduQuest{% endblock %}
+
+{% block content %}
+  <h1 style="text-align: center;">{% if edit_material %}{{ t('edit_material') }}{% else %}{{ t('create_material') }}{% endif %}</h1>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+      <h2 style="margin:0;">
+        {% if edit_material %}{{ material_type_label(material_type) }}
+        {% elif material_type == 'course' %}{{ t('create_course_title') }}
+        {% elif material_type == 'test' %}{{ t('create_test_title') }}
+        {% elif material_type == 'video' %}{{ t('upload_video_title') }}
+        {% elif material_type == 'tip' %}{{ t('create_tip_title') }}
+        {% endif %}
+      </h2>
+      {% if edit_material and edit_material.material_id %}
+        <a href="{{ url_for('material_view', material_id=edit_material.material_id) }}" class="text-muted">{{ t('back') }}</a>
+      {% else %}
+        <a href="{{ url_for('create_choose') }}" class="text-muted">{{ t('back') }}</a>
+      {% endif %}
+    </div>
+
+    {% set form_action = url_for('edit_material', material_id=edit_material.material_id) if edit_material and edit_material.material_id else url_for('create_material', material_type=material_type) %}
+    <form method="post" action="{{ form_action }}" enctype="multipart/form-data">
+
+      <div class="form-group">
+        <label class="form-label" for="f-title">{{ t('title') }}</label>
+        <input id="f-title" class="form-input" type="text" name="title"
+               value="{{ edit_material.material_title if edit_material else '' }}"
+               placeholder="{{ t('title_placeholder') }}" required maxlength="50" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-desc">{% if material_type == 'tip' %}{{ t('content') }}{% else %}{{ t('description') }}{% endif %}</label>
+        <textarea id="f-desc" class="form-textarea" name="description"
+                  placeholder="{% if material_type == 'tip' %}{{ t('tip_content_placeholder') }}{% else %}{{ t('description_placeholder') }}{% endif %}" {% if material_type == 'tip' %}maxlength="5000"{% else %}maxlength="500"{% endif %}>{{ edit_material.material_description if edit_material else '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f-cat">{{ t('category') }}</label>
+          <select id="f-cat" class="form-select" name="category_id" onchange="filterSubcategories()">
+            <option value="">{{ t('select_category') }}</option>
+            {% for cat in top_categories %}
+              <option value="{{ cat.category_id }}" {% if edit_material and edit_material.material_category_id == cat.category_id %}selected{% endif %}>{{ category_label(cat.category_slug, cat.category_name) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-sub">{{ t('subcategory') }}</label>
+          <select id="f-sub" class="form-select" name="subcategory_id">
+            <option value="">{{ t('select_subcategory') }}</option>
+            {% for s in all_subcategories %}
+              <option value="{{ s.category_id }}" data-parent="{{ s.category_parent_id }}"
+                      {% if edit_material and edit_material.material_subcategory_id == s.category_id %}selected{% endif %}>
+                {{ category_label(s.category_slug, s.category_name) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-diff">{{ t('difficulty') }}</label>
+          <select id="f-diff" class="form-select" name="difficulty">
+            {% set diff = edit_material.material_difficulty if edit_material else 'beginner' %}
+            <option value="beginner" {% if diff == 'beginner' %}selected{% endif %}>{{ t('beginner') }}</option>
+            <option value="intermediate" {% if diff == 'intermediate' %}selected{% endif %}>{{ t('intermediate') }}</option>
+            <option value="advanced" {% if diff == 'advanced' %}selected{% endif %}>{{ t('advanced') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ t('cover_image') }}</label>
+        <div class="image-upload">
+          <div class="preview" id="cover-preview">
+            {% if edit_material and edit_material.material_image_path %}
+              <img src="{{ edit_material.material_image_path }}" alt="" style="width:100%; height:100%; object-fit:cover;" />
+            {% else %}
+              <div class="material-thumb-placeholder" style="aspect-ratio:auto; height:100%;">{{ t('none') }}</div>
+            {% endif %}
+          </div>
+          <div style="flex:1;">
+            <input class="form-input" type="file" name="cover_image" accept="image/*" onchange="previewCover(this)" />
+            <div class="form-hint">{{ t('image_upload_hint') }}{% if edit_material %} {{ t('keep_current_image') }}{% endif %}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if material_type != 'tip' %}
+      <div class="form-group">
+        <label class="form-label" for="f-yt">{{ t('youtube_url') }}{% if material_type != 'video' %} ({{ t('optional') }}){% endif %}</label>
+        <input id="f-yt" class="form-input" type="url" name="youtube_url"
+               value="{{ edit_material.material_youtube_url if edit_material else '' }}"
+               placeholder="https://www.youtube.com/watch?v=..." {% if material_type == 'video' %}required{% endif %} />
+        <div class="form-hint">{{ t('youtube_embed_hint') }}</div>
+      </div>
+      {% endif %}
+
+      {% if material_type != 'video' and material_type != 'tip' %}
+      <div class="form-group">
+        <label class="form-label" for="f-content">{{ t('content') }}</label>
+        <textarea id="f-content" class="form-textarea" name="content" rows="6"
+                  placeholder="{{ t('content_placeholder') }}">{{ edit_material.material_content if edit_material else '' }}</textarea>
+      </div>
+      {% endif %}
+
+      {% if material_type == 'test' %}
+      <div class="form-group">
+        <label class="form-label">{{ t('test_questions') }}</label>
+        <div class="form-hint" style="margin-bottom:0.5rem;">{{ t('test_questions_hint') }}</div>
+        <div class="steps-builder" id="questions-builder">
+          {% if edit_steps %}
+            {% for step in edit_steps %}
+              <div class="step-row">
+                <div class="step-row-head">
+                  <span class="step-num">{{ t('question') }} {{ loop.index }}</span>
+                  <button type="button" class="step-remove" onclick="removeQuestion(this)">{{ t('delete') }}</button>
+                </div>
+                <input class="form-input" type="text" name="step_title[]" value="{{ step.title }}" placeholder="{{ t('question_text_placeholder') }}" required />
+                <div style="margin-top: 0.5rem;">
+                  <label class="form-label" style="font-size: 0.85rem;">{{ t('answer_options') }}</label>
+                  <div class="answer-options">
+                    {% set answers = step.description.split('|||') if step.description else [] %}
+                    {% set question_index = loop.index0 %}
+                    {% for ans in answers %}
+                      {% set parts = ans.split('::') %}
+                      <div class="answer-row">
+                        <input type="radio" name="correct_{{ question_index }}" value="{{ loop.index0 }}" {% if parts[0] == '1' %}checked{% endif %} />
+                        <input class="form-input" type="text" name="answer_{{ question_index }}[]" value="{{ parts[1] if parts|length > 1 else ans }}" placeholder="{{ t('answer_placeholder') }}" />
+                        <button type="button" class="step-remove" onclick="removeAnswer(this)">×</button>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addAnswer(this)" style="margin-top: 0.5rem;">+ {{ t('add_answer') }}</button>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <button type="button" class="add-step-btn" onclick="addQuestion()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          {{ t('add_question') }}
+        </button>
+      </div>
+      {% elif material_type != 'video' and material_type != 'tip' %}
+      <div class="form-group">
+        <label class="form-label">{{ t('steps') }}</label>
+        <div class="form-hint" style="margin-bottom:0.5rem;">{{ t('steps_hint') }}</div>
+        <div class="steps-builder" id="steps-builder">
+          {% if edit_steps %}
+            {% for step in edit_steps %}
+              <div class="step-row">
+                <div class="step-row-head">
+                  <span class="step-num">{{ t('point') }} {{ loop.index }}</span>
+                  <button type="button" class="step-remove" onclick="removeStep(this)">{{ t('delete') }}</button>
+                </div>
+                <select class="form-select" name="step_type[]" style="margin-bottom: 0.5rem;">
+                  <option value="start" {% if step.type == 'start' %}selected{% endif %}>{{ t('start') }}</option>
+                  <option value="point" {% if step.type == 'point' %}selected{% endif %}>{{ t('point') }}</option>
+                  <option value="step" {% if step.type == 'step' %}selected{% endif %}>{{ t('step') }}</option>
+                  <option value="task" {% if step.type == 'task' %}selected{% endif %}>{{ t('task') }}</option>
+                  <option value="summary" {% if step.type == 'summary' %}selected{% endif %}>{{ t('summary') }}</option>
+                  <option value="finish" {% if step.type == 'finish' %}selected{% endif %}>{{ t('finish') }}</option>
+                </select>
+                <input class="form-input" type="text" name="step_title[]" value="{{ step.title }}" placeholder="{{ t('step_title_placeholder') }}" />
+                <textarea class="form-textarea" name="step_desc[]" placeholder="{{ t('step_description_placeholder') }}" rows="2">{{ step.description }}</textarea>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <button type="button" class="add-step-btn" onclick="addStep()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          {{ t('add_step') }}
+        </button>
+      </div>
+      {% endif %}
+
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" type="submit">{% if edit_material %}{{ t('save_changes') }}{% else %}{{ t('publish') }}{% endif %}</button>
+        <a class="btn btn-outline btn-lg" href="{{ url_for('home') }}">{{ t('cancel') }}</a>
+      </div>
+    </form>
+  </div>
+
+  <template id="step-template">
+    <div class="step-row">
+      <div class="step-row-head">
+        <span class="step-num">{{ t('point') }}</span>
+        <button type="button" class="step-remove" onclick="removeStep(this)">{{ t('delete') }}</button>
+      </div>
+      <select class="form-select" name="step_type[]" style="margin-bottom: 0.5rem;">
+        <option value="start">{{ t('start') }}</option>
+        <option value="point" selected>{{ t('point') }}</option>
+        <option value="step">{{ t('step') }}</option>
+        <option value="task">{{ t('task') }}</option>
+        <option value="summary">{{ t('summary') }}</option>
+        <option value="finish">{{ t('finish') }}</option>
+      </select>
+      <input class="form-input" type="text" name="step_title[]" placeholder="{{ t('step_title_placeholder') }}" />
+      <textarea class="form-textarea" name="step_desc[]" placeholder="{{ t('step_description_placeholder') }}" rows="2"></textarea>
+    </div>
+  </template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var questionCounter = 0;
+  var createFormText = {
+    start: {{ t('start')|tojson }},
+    finish: {{ t('finish')|tojson }},
+    summary: {{ t('summary')|tojson }},
+    point: {{ t('point')|tojson }},
+    step: {{ t('step')|tojson }},
+    task: {{ t('task')|tojson }},
+    question: {{ t('question')|tojson }},
+    delete: {{ t('delete')|tojson }},
+    questionText: {{ t('question_text_placeholder')|tojson }},
+    answerOptions: {{ t('answer_options')|tojson }},
+    answerPlaceholder: {{ t('answer_placeholder')|tojson }},
+    addAnswer: {{ t('add_answer')|tojson }},
+    maxAnswers: {{ t('max_answers_error')|tojson }},
+    minAnswers: {{ t('min_answers_error')|tojson }}
+  };
+
+  function addStep() {
+    var tpl = document.getElementById('step-template');
+    var clone = tpl.content.cloneNode(true);
+    var select = clone.querySelector('select[name="step_type[]"]');
+    if (select) {
+      select.addEventListener('change', function() {
+        renumberSteps();
+      });
+    }
+    document.getElementById('steps-builder').appendChild(clone);
+    renumberSteps();
+  }
+  function removeStep(btn) {
+    btn.closest('.step-row').remove();
+    renumberSteps();
+  }
+  function renumberSteps() {
+    var typeCounts = {
+      'start': 0,
+      'point': 0,
+      'step': 0,
+      'task': 0,
+      'summary': 0,
+      'finish': 0
+    };
+
+    document.querySelectorAll('#steps-builder .step-row').forEach(function (row, i) {
+      var select = row.querySelector('select[name="step_type[]"]');
+      var label = row.querySelector('.step-num');
+      if (select && label) {
+        var type = select.value;
+
+        if (type === 'start') {
+          label.textContent = createFormText.start;
+        } else if (type === 'finish') {
+          label.textContent = createFormText.finish;
+        } else if (type === 'summary') {
+          label.textContent = createFormText.summary;
+        } else {
+          typeCounts[type]++;
+          var typeNames = {
+            'point': createFormText.point,
+            'step': createFormText.step,
+            'task': createFormText.task
+          };
+          label.textContent = (typeNames[type] || createFormText.point) + ' ' + typeCounts[type];
+        }
+      }
+    });
+
+    // Disable start/finish options if already used
+    var hasStart = false;
+    var hasFinish = false;
+    document.querySelectorAll('#steps-builder select[name="step_type[]"]').forEach(function(select) {
+      if (select.value === 'start') hasStart = true;
+      if (select.value === 'finish') hasFinish = true;
+    });
+    document.querySelectorAll('#steps-builder select[name="step_type[]"]').forEach(function(select) {
+      Array.from(select.options).forEach(function(opt) {
+        if (opt.value === 'start') {
+          opt.disabled = hasStart && !opt.selected;
+        } else if (opt.value === 'finish') {
+          opt.disabled = hasFinish && !opt.selected;
+        }
+      });
+    });
+  }
+
+  // Add change listeners to existing selects
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#steps-builder select[name="step_type[]"]').forEach(function(select) {
+      select.addEventListener('change', function() {
+        renumberSteps();
+      });
+    });
+    renumberSteps();
+  });
+
+  function addQuestion() {
+    var builder = document.getElementById('questions-builder');
+    var qNum = builder.querySelectorAll('.step-row').length;
+    var html = `
+      <div class="step-row">
+        <div class="step-row-head">
+          <span class="step-num">${createFormText.question} ${qNum + 1}</span>
+          <button type="button" class="step-remove" onclick="removeQuestion(this)">${createFormText.delete}</button>
+        </div>
+        <input class="form-input" type="text" name="step_title[]" placeholder="${createFormText.questionText}" required />
+        <div style="margin-top: 0.5rem;">
+          <label class="form-label" style="font-size: 0.85rem;">${createFormText.answerOptions}</label>
+          <div class="answer-options">
+            <div class="answer-row">
+              <input type="radio" name="correct_${qNum}" value="0" checked />
+              <input class="form-input" type="text" name="answer_${qNum}[]" placeholder="${createFormText.answerPlaceholder}" required />
+              <button type="button" class="step-remove" onclick="removeAnswer(this)">×</button>
+            </div>
+            <div class="answer-row">
+              <input type="radio" name="correct_${qNum}" value="1" />
+              <input class="form-input" type="text" name="answer_${qNum}[]" placeholder="${createFormText.answerPlaceholder}" required />
+              <button type="button" class="step-remove" onclick="removeAnswer(this)">×</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addAnswer(this)" style="margin-top: 0.5rem;">+ ${createFormText.addAnswer}</button>
+        </div>
+      </div>
+    `;
+    builder.insertAdjacentHTML('beforeend', html);
+  }
+
+  function removeQuestion(btn) {
+    btn.closest('.step-row').remove();
+    renumberQuestions();
+  }
+
+  function renumberQuestions() {
+    document.querySelectorAll('#questions-builder .step-row').forEach(function (row, i) {
+      row.querySelector('.step-num').textContent = createFormText.question + ' ' + (i + 1);
+    });
+  }
+
+  function addAnswer(btn) {
+    var container = btn.previousElementSibling;
+    var qRow = btn.closest('.step-row');
+    var qIndex = Array.from(document.querySelectorAll('#questions-builder .step-row')).indexOf(qRow);
+    var answerCount = container.querySelectorAll('.answer-row').length;
+
+    if (answerCount >= 6) {
+      alert(createFormText.maxAnswers);
+      return;
+    }
+
+    var html = `
+      <div class="answer-row">
+        <input type="radio" name="correct_${qIndex}" value="${answerCount}" />
+        <input class="form-input" type="text" name="answer_${qIndex}[]" placeholder="${createFormText.answerPlaceholder}" required />
+        <button type="button" class="step-remove" onclick="removeAnswer(this)">×</button>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+  }
+
+  function removeAnswer(btn) {
+    var container = btn.closest('.answer-options');
+    if (container.querySelectorAll('.answer-row').length <= 2) {
+      alert(createFormText.minAnswers);
+      return;
+    }
+    btn.closest('.answer-row').remove();
+  }
+
+  function previewCover(input) {
+    var preview = document.getElementById('cover-preview');
+    if (!input.files || !input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      preview.innerHTML = '<img src="' + e.target.result + '" alt="" style="width:100%;height:100%;object-fit:cover;" />';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+  function filterSubcategories() {
+    var catId = document.getElementById('f-cat').value;
+    var sub = document.getElementById('f-sub');
+    Array.from(sub.options).forEach(function (opt) {
+      if (!opt.value) { opt.hidden = false; return; }
+      var parent = opt.getAttribute('data-parent');
+      var hide = catId && parent !== String(catId);
+      opt.hidden = hide;
+      if (hide && opt.selected) {
+        opt.selected = false;
+        sub.value = '';
+      }
+    });
+  }
+  // initial filter
+  document.addEventListener('DOMContentLoaded', filterSubcategories);
+</script>
+{% endblock %}

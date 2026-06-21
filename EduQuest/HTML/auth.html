@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="{{ current_language }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ t('auth_title') }} — EduQuest</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('asset_favicons', filename='favicon.svg') }}" />
+  <link rel="stylesheet" href="{{ url_for('css_files', filename='theme.css') }}" />
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--secondary);
+      padding: 1rem;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--background);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 2rem;
+    }
+    .auth-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      text-decoration: none;
+      color: var(--foreground);
+    }
+    .auth-logo img {
+      width: 64px;
+      height: 64px;
+    }
+    .auth-logo span {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .auth-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .auth-tab {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: none;
+      font-weight: 600;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .auth-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .password-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .verification-section {
+      text-align: center;
+    }
+    .code-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+    }
+    .code-input {
+      width: 3rem;
+      height: 3.5rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--background);
+    }
+    .lang-select-wrapper {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="lang-select-wrapper">
+    <select class="form-select form-select-sm" aria-label="{{ t('language') }}" onchange="changeAuthLanguage(this.value)">
+      <option value="ru" {% if session.get('language') == 'ru' %}selected{% endif %}>RU</option>
+      <option value="en" {% if session.get('language') == 'en' %}selected{% endif %}>EN</option>
+      <option value="kk" {% if session.get('language') == 'kk' %}selected{% endif %}>KZ</option>
+    </select>
+  </div>
+
+  <div class="auth-card">
+    <a href="{{ url_for('home') }}" class="auth-logo">
+      <img src="{{ url_for('asset_logos', filename='Logo.svg') }}" alt="Logo" />
+      <span>EduQuest</span>
+    </a>
+
+    <div id="auth-main">
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-login" onclick="switchTab('login')">{{ t('auth_login_tab') }}</button>
+        <button type="button" class="auth-tab" id="tab-register" onclick="switchTab('register')">{{ t('register') }}</button>
+      </div>
+
+      <form id="login-form" onsubmit="handleAuth(event, 'login')">
+        <div class="form-group">
+          <label class="form-label">{{ t('email') }}</label>
+          <input type="email" name="email" class="form-input" placeholder="{{ t('auth_email_placeholder') }}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('password') }}</label>
+          <div class="password-wrapper">
+            <input type="password" name="password" class="form-input" placeholder="{{ t('auth_password_placeholder') }}" required />
+            <button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="{{ t('auth_show_password') }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div id="login-error" class="form-error hidden" style="margin-bottom: 1rem;"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">{{ t('login') }}</button>
+      </form>
+
+      <form id="register-form" class="hidden" onsubmit="handleAuth(event, 'register')">
+        <div class="form-group">
+          <label class="form-label">{{ t('auth_username') }}</label>
+          <input type="text" name="full_name" class="form-input" placeholder="{{ t('auth_username_placeholder') }}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('email') }}</label>
+          <input type="email" name="email" class="form-input" placeholder="{{ t('auth_email_placeholder') }}" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('password') }}</label>
+          <div class="password-wrapper">
+            <input type="password" name="password" class="form-input" placeholder="{{ t('auth_min_password') }}" required minlength="6" id="reg-pass" />
+            <button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="{{ t('auth_show_password') }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('auth_confirm_password') }}</label>
+          <div class="password-wrapper">
+            <input type="password" name="confirm_password" class="form-input" placeholder="{{ t('auth_repeat_password') }}" required id="reg-confirm" />
+            <button type="button" class="password-toggle" onclick="togglePassword(this)" aria-label="{{ t('auth_show_password') }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" name="policy_accept" required />
+            <span>{{ t('auth_policy_prefix') }} <a href="{{ url_for('policy_page') }}" target="_blank">{{ t('auth_policy_link') }}</a> {{ t('auth_policy_suffix') }}</span>
+          </label>
+        </div>
+        <div id="register-error" class="form-error hidden" style="margin-bottom: 1rem;"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">{{ t('continue') }}</button>
+      </form>
+    </div>
+
+    <div id="auth-verify" class="hidden">
+      <div class="verification-section">
+        <h2>{{ t('auth_verification') }}</h2>
+        <p id="auth-verify-help" data-default="{{ t('auth_verification_help') }}">{{ t('auth_verification_help') }}</p>
+        <div class="code-inputs">
+          <input type="text" maxlength="6" class="form-input code-input" id="verification-code" placeholder="{{ t('auth_code_placeholder') }}" style="width: 100%; max-width: 200px;" />
+        </div>
+        <div id="verify-error" class="form-error hidden" style="margin-bottom: 1rem;"></div>
+        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitVerification()">{{ t('confirm') }}</button>
+        <button type="button" class="btn btn-link btn-block" style="margin-top: 1rem;" onclick="backToAuth()">{{ t('back') }}</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentAuthMode = 'login';
+    let authData = {};
+    const authMessages = {
+      passwordsMismatch: {{ t('auth_passwords_mismatch')|tojson }},
+      serverError: {{ t('auth_server_error')|tojson }},
+      enterCode: {{ t('auth_enter_code')|tojson }}
+    };
+
+    function switchTab(mode) {
+      currentAuthMode = mode;
+      document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+      document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+      document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
+      document.getElementById('register-form').classList.toggle('hidden', mode !== 'register');
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('register-error').classList.add('hidden');
+      setAuthModeInUrl(mode);
+    }
+
+    function togglePassword(btn) {
+      const input = btn.previousElementSibling;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass 
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    }
+
+    async function handleAuth(event, mode) {
+      event.preventDefault();
+      const form = event.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const errorDiv = document.getElementById(mode + '-error');
+      
+      errorDiv.classList.add('hidden');
+
+      if (mode === 'register') {
+        if (data.password !== data.confirm_password) {
+          errorDiv.textContent = authMessages.passwordsMismatch;
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+      }
+
+      authData = data;
+      authData.mode = mode;
+
+      try {
+        const res = await fetch('/auth/request-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email, mode: mode })
+        });
+        const result = await res.json();
+        
+        if (result.ok) {
+          const verifyHelp = document.getElementById('auth-verify-help');
+          if (verifyHelp) {
+            verifyHelp.textContent = result.email_sent === false && result.message
+              ? result.message
+              : verifyHelp.dataset.default;
+          }
+          document.getElementById('auth-main').classList.add('hidden');
+          document.getElementById('auth-verify').classList.remove('hidden');
+        } else {
+          errorDiv.textContent = result.error;
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (e) {
+        errorDiv.textContent = authMessages.serverError;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    async function submitVerification() {
+      const code = document.getElementById('verification-code').value.trim();
+      const errorDiv = document.getElementById('verify-error');
+      errorDiv.classList.add('hidden');
+
+      if (!code) {
+        errorDiv.textContent = authMessages.enterCode;
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/auth/verify-and-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...authData, code: code })
+        });
+        const result = await res.json();
+
+        if (result.ok) {
+          window.location.href = result.redirect || '/';
+        } else {
+          errorDiv.textContent = result.error;
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (e) {
+        errorDiv.textContent = authMessages.serverError;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    function backToAuth() {
+      document.getElementById('auth-verify').classList.add('hidden');
+      document.getElementById('auth-main').classList.remove('hidden');
+    }
+
+    function setAuthModeInUrl(mode) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', mode);
+      window.history.replaceState(null, '', url);
+    }
+
+    function changeAuthLanguage(lang) {
+      setAuthModeInUrl(currentAuthMode);
+      const next = window.location.pathname + window.location.search;
+      window.location.href = '/set_language/' + encodeURIComponent(lang) + '?next=' + encodeURIComponent(next);
+    }
+
+    const requestedMode = new URLSearchParams(window.location.search).get('mode');
+    if (requestedMode === 'register') {
+      switchTab('register');
+    }
+  </script>
+</body>
+</html>

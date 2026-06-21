@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% block title %}{{ material.material_title }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="course-grid">
+    <div>
+      <!-- Video / cover frame -->
+      {% if youtube_id or material.material_image_path %}
+      <div class="video-frame">
+        {% if youtube_id %}
+          <iframe src="https://www.youtube.com/embed/{{ youtube_id }}"
+                  title="{{ material.material_title }}"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen></iframe>
+        {% elif material.material_image_path %}
+          <img src="{{ material.material_image_path }}" alt="{{ material.material_title }}"
+               style="width:100%; height:100%; object-fit:cover;" />
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Title + meta + description -->
+      <div class="material-info">
+        <h1>{{ material.material_title }}</h1>
+        <div class="material-info-meta">
+          <span>{{ t('author') }}: <a href="{{ url_for('view_user_profile', user_id=material.material_author_id) }}" style="color: var(--primary); text-decoration: none;">{{ material.author_name }}</a></span>
+          {% if material.top_name %}<span>•</span><span>{{ category_label(material.top_slug, material.top_name) }}{% if material.sub_name %} · {{ category_label(material.sub_slug, material.sub_name) }}{% endif %}</span>{% endif %}
+          <span>•</span>
+          <span>
+            {{ material_type_label(material.material_type) }}
+          </span>
+          <span>•</span>
+          <span>{{ material.material_views|nice_number }} {{ t('views') }}</span>
+          <span>•</span>
+          <span class="difficulty-badge difficulty-{{ material.material_difficulty }}" style="font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm);">
+            {{ difficulty_label(material.material_difficulty) }}
+          </span>
+          {% if material.rating_count and material.rating_count > 0 %}
+            <span>•</span>
+            <span class="meta-rating">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              {{ "%.1f"|format(material.avg_rating) }} ({{ material.rating_count }})
+            </span>
+          {% endif %}
+        </div>
+
+        {% if (is_author or is_moderator) and not (is_moderator and is_pending) %}
+          <div class="author-actions">
+            <a class="btn btn-outline btn-sm" href="{{ url_for('edit_material', material_id=material.material_id) }}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              {{ t('edit') }}
+            </a>
+            <button type="button" class="btn btn-danger btn-sm" onclick="openDeleteModal()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg>
+              {{ t('delete') }}
+            </button>
+          </div>
+        {% endif %}
+
+        {% if material.material_description %}
+          {% set desc_long = material.material_description|length > 300 %}
+          <div class="material-description {% if desc_long %}collapsed{% endif %}" data-long="{{ '1' if desc_long else '0' }}" style="white-space: pre-line; word-wrap: break-word; overflow-wrap: break-word;">
+            {{ material.material_description }}
+          </div>
+          {% if desc_long %}
+            <button type="button" class="comment-expand" onclick="toggleExpand(this)">{{ t('show_full') }}</button>
+          {% endif %}
+        {% endif %}
+
+        {% if material.material_content %}
+          {% set content_long = material.material_content|length > 300 %}
+          <div class="material-description {% if content_long %}collapsed{% endif %}" data-long="{{ '1' if content_long else '0' }}" style="white-space: pre-line; word-wrap: break-word; overflow-wrap: break-word;">
+            {{ material.material_content }}
+          </div>
+          {% if content_long %}
+            <button type="button" class="comment-expand" onclick="toggleExpand(this)">{{ t('show_full') }}</button>
+          {% endif %}
+        {% endif %}
+
+        {% if is_pending %}
+          <div class="card-flat" style="padding:1rem; text-align:center; margin: 1rem 0; border: 1px solid #f59e0b; border-radius: var(--radius-md);">
+            <span style="color: #f59e0b; font-weight: 600;">{{ t('pending_material') }}</span>
+          </div>
+        {% endif %}
+
+        <!-- Test questions with step-by-step progression -->
+        {% if material.material_type == 'test' and steps and steps|length > 0 and (not is_pending or is_moderator) %}
+          <div id="test-block" class="steps-block">
+            <h3>{{ t('test_questions') }}</h3>
+            {% if current_user %}
+              {% set started = progress and progress.progress_started and not progress.progress_completed %}
+              {% set completed = progress and progress.progress_completed %}
+              {% set current_step = progress.progress_step if progress else 0 %}
+
+              {% if not progress or (not started and not completed) %}
+                <form method="post" action="{{ url_for('start_material', material_id=material.material_id) }}">
+                  <button class="btn btn-primary btn-lg" type="submit">{{ t('start_test') }}</button>
+                </form>
+              {% elif started %}
+                {% set idx = current_step %}
+                {% if idx >= steps|length %}{% set idx = steps|length - 1 %}{% endif %}
+                <div class="step-progress">{{ t('question') }} {{ idx + 1 }} {{ t('of') }} {{ steps|length }}</div>
+                <div class="test-question">
+                  {% set step = steps[idx] %}
+                  <div class="test-question-title">{{ idx + 1 }}. {{ step.title }}</div>
+                  {% set answers = step.description.split('|||') if step.description else [] %}
+                  <form method="post" action="{{ url_for('submit_test', material_id=material.material_id) }}" id="test-form-step">
+                    <input type="hidden" name="current_step" value="{{ idx }}" />
+                    <div class="test-answers">
+                      {% for ans in answers %}
+                        {% set parts = ans.split('::') %}
+                        {% set answer_text = parts[1] if parts|length > 1 else ans %}
+                        <label class="test-answer-option">
+                          <input type="radio" name="answer_{{ idx }}" value="{{ loop.index0 }}" required />
+                          <span>{{ answer_text }}</span>
+                        </label>
+                      {% endfor %}
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="margin-top: 1rem;">{% if idx + 1 < steps|length %}{{ t('next') }}{% else %}{{ t('finish_test') }}{% endif %}</button>
+                  </form>
+                </div>
+              {% elif completed %}
+                {% set xp_earned = material.material_xp_reward if material.material_xp_reward else 50 %}
+                <div class="completed-tag">{{ t('test_completed') }} · +{{ xp_earned }} XP</div>
+                <div class="test-questions">
+                  {% for step in steps %}
+                    <div class="test-question">
+                      <div class="test-question-title">{{ loop.index }}. {{ step.title }}</div>
+                      {% set answers = step.description.split('|||') if step.description else [] %}
+                      <div class="test-answers">
+                        {% for ans in answers %}
+                          {% set parts = ans.split('::') %}
+                          {% set is_correct = parts[0] == '1' %}
+                          {% set answer_text = parts[1] if parts|length > 1 else ans %}
+                          <div class="test-answer-option {% if is_correct %}correct{% endif %}">
+                            <span>{{ answer_text }}</span>
+                            {% if is_correct %}
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% else %}
+              <p class="text-muted">{{ t('login_to_take_test') }}</p>
+            {% endif %}
+          </div>
+        {% elif steps and steps|length > 0 %}
+          <div id="steps" class="steps-block">
+            <h3>{{ t('material_steps') }}</h3>
+            {% if current_user %}
+              {% set started = progress and progress.progress_started and not progress.progress_completed %}
+              {% set completed = progress and progress.progress_completed %}
+              {% set current_step = progress.progress_step if progress else 0 %}
+
+              {% if not progress or (not started and not completed) %}
+                <form method="post" action="{{ url_for('start_material', material_id=material.material_id) }}">
+                  <button class="btn btn-primary btn-lg" type="submit">{{ t('start_material') }}</button>
+                </form>
+              {% elif started %}
+                {% set idx = current_step %}
+                {% if idx >= steps|length %}{% set idx = steps|length - 1 %}{% endif %}
+                <div class="step-progress">{{ t('point') }} {{ idx + 1 }} {{ t('of') }} {{ steps|length }}</div>
+                <ol class="steps-list">
+                  <li class="step-item active">
+                    {% set step = steps[idx] %}
+                    {% set step_type_label = {'step': t('step'), 'task': t('task'), 'point': t('point'), 'start': t('start'), 'summary': t('summary'), 'finish': t('finish')} %}
+                    {% set type_name = step_type_label.get(step.type, t('point')) if step.type else t('point') %}
+                    {% if step.title %}<div class="step-title">{{ type_name }} {{ idx + 1 }}: {{ step.title }}</div>{% endif %}
+                    {% if step.description %}<div class="step-desc" style="white-space: pre-line;">{{ step.description }}</div>{% endif %}
+                  </li>
+                </ol>
+                {% if idx + 1 < steps|length %}
+                  <form method="post" action="{{ url_for('next_step', material_id=material.material_id) }}">
+                    <button class="btn btn-primary" type="submit">{{ t('next') }}</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('complete_material', material_id=material.material_id) }}">
+                    <button class="btn btn-primary" type="submit">{{ t('complete_material') }}</button>
+                  </form>
+                {% endif %}
+              {% elif completed %}
+                <div class="completed-tag">{{ t('material_completed') }} · +50 XP</div>
+                <ol class="steps-list">
+                  {% for step in steps %}
+                    <li class="step-item">
+                      {% set step_type_label = {'step': t('step'), 'task': t('task'), 'point': t('point'), 'start': t('start'), 'summary': t('summary'), 'finish': t('finish')} %}
+                      {% set type_name = step_type_label.get(step.type, t('point')) if step.type else t('point') %}
+                      {% if step.title %}<div class="step-title">{{ type_name }} {{ loop.index }}: {{ step.title }}</div>{% endif %}
+                      {% if step.description %}<div class="step-desc" style="white-space: pre-line;">{{ step.description }}</div>{% endif %}
+                    </li>
+                  {% endfor %}
+                </ol>
+              {% endif %}
+            {% else %}
+              <p class="text-muted">{{ t('login_to_complete_material') }}</p>
+              <ol class="steps-list">
+                {% for step in steps %}
+                  <li class="step-item">
+                    {% set step_type_label = {'step': t('step'), 'task': t('task'), 'point': t('point'), 'start': t('start'), 'summary': t('summary'), 'finish': t('finish')} %}
+                    {% set type_name = step_type_label.get(step.type, t('point')) if step.type else t('point') %}
+                    {% if step.title %}<div class="step-title">{{ type_name }} {{ loop.index }}: {{ step.title }}</div>{% endif %}
+                    {% if step.description %}<div class="step-desc" style="white-space: pre-line;">{{ step.description }}</div>{% endif %}
+                  </li>
+                {% endfor %}
+              </ol>
+            {% endif %}
+          </div>
+        {% else %}
+          {% if not is_pending %}
+            {% if current_user and not (progress and progress.progress_completed) %}
+              <form method="post" action="{{ url_for('complete_material', material_id=material.material_id) }}" style="margin-top: 1.5rem;">
+                <button class="btn btn-primary btn-lg" type="submit">{{ t('mark_as_learned') }}</button>
+              </form>
+            {% elif current_user and progress and progress.progress_completed %}
+              {% set xp_earned = material.material_xp_reward if material.material_xp_reward else 50 %}
+              <div class="completed-tag" style="margin-top: 1.5rem;">{{ t('material_completed') }} · +{{ xp_earned }} XP</div>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Rating -->
+      {% if current_user and not is_author and not is_pending %}
+        <div class="rating-card">
+          <h3>{{ t('rate_material') }}</h3>
+          <form method="post" action="{{ url_for('rate_material', material_id=material.material_id) }}" class="rating-form">
+            <div class="star-row">
+              {% for i in range(5, 0, -1) %}
+                <label class="star-label">
+                  <input type="radio" name="rating" value="{{ i }}" {% if user_rating == i %}checked{% endif %} />
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </label>
+              {% endfor %}
+            </div>
+            <button class="btn btn-primary btn-sm" type="submit">{% if user_rating %}{{ t('change_rating') }}{% else %}{{ t('rate') }}{% endif %}</button>
+          </form>
+        </div>
+      {% endif %}
+
+      <!-- Comments -->
+      <div id="comments" class="comments-card">
+        <div class="comments-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <h3>{{ t('comments') }} ({{ comments|length }})</h3>
+        </div>
+
+        {% if current_user and not is_pending %}
+          <form class="comment-form" method="post" action="{{ url_for('post_comment', material_id=material.material_id) }}">
+            <textarea class="form-textarea" name="text" placeholder="{{ t('leave_comment') }}" required></textarea>
+            <button class="btn btn-primary" type="submit" style="align-self:flex-start;">{{ t('send') }}</button>
+          </form>
+        {% elif is_pending %}
+          <div class="card-flat" style="padding:1rem; text-align:center; margin-bottom:1.25rem;">
+            <span class="text-muted">{{ t('comments_available_after_publish') }}</span>
+          </div>
+        {% else %}
+          <div class="card-flat" style="padding:1rem; text-align:center; margin-bottom:1.25rem;">
+            <span class="text-muted">{{ t('login_to_comment') }} </span>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('auth_page', mode='register') }}">{{ t('login') }}</a>
+          </div>
+        {% endif %}
+
+        {% if comments %}
+          <div class="comment-list">
+            {% for c in comments %}
+              <div class="comment-item">
+                <a href="{{ url_for('view_user_profile', user_id=c.user_id) }}" style="text-decoration: none;">
+                  <div class="avatar">
+                    {% if c.user_avatar_path %}
+                      <img src="{{ c.user_avatar_path }}" alt="{{ c.user_full_name }}" />
+                    {% else %}
+                      {{ c.user_full_name|avatar_initials }}
+                    {% endif %}
+                  </div>
+                </a>
+                <div class="comment-body">
+                  <div class="comment-head">
+                    <a href="{{ url_for('view_user_profile', user_id=c.user_id) }}" class="comment-author" style="text-decoration: none; color: inherit;">{{ c.user_full_name }}</a>
+                    <span class="comment-time">{{ c.comment_created_at|ago }}</span>
+                  </div>
+                  {% set is_long = c.comment_text|length > 280 %}
+                  <div class="comment-text {% if is_long %}collapsed{% endif %}" data-long="{{ '1' if is_long else '0' }}">{{ c.comment_text }}</div>
+                  {% if is_long %}
+                    <button type="button" class="comment-expand" onclick="toggleExpand(this)">{{ t('expand') }}</button>
+                  {% endif %}
+                  <div class="comment-actions">
+                    <button type="button" class="comment-action" data-comment-id="{{ c.comment_id }}"
+                            onclick="toggleLike(this, {{ c.comment_id }})">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                      <span class="like-count">{{ c.likes }}</span>
+                    </button>
+                    <button type="button" class="comment-action" data-comment-id="{{ c.comment_id }}"
+                            onclick="toggleDislike(this, {{ c.comment_id }})">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+                      <span class="dislike-count">{{ c.dislikes }}</span>
+                    </button>
+                    {% if current_user and (current_user.user_id == c.user_id or is_moderator) %}
+                      <button type="button" class="comment-action" style="color: var(--destructive);" onclick="openDeleteCommentModal('{{ url_for('delete_comment', comment_id=c.comment_id) }}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path></svg>
+                        {{ t('delete') }}
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty" style="padding: 1.5rem 1rem;">
+            <p>{{ t('no_comments') }}</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside>
+      <div class="lessons-card">
+        <div class="lessons-head">
+          <h3>{{ t('material_info') }}</h3>
+          <div class="count">
+            {{ material_type_label(material.material_type) }}
+          </div>
+        </div>
+        {% if material.material_xp_reward and material.material_xp_reward > 0 %}
+        <div style="padding: 0.5rem 0 0; text-align: center;">
+          <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">+{{ material.material_xp_reward }} {{ t('xp_for_completion') }}</span>
+        </div>
+        {% endif %}
+        {% if is_moderator and material.material_status == 'approved' %}
+        <div style="padding: 0.5rem 0; border-top: 1px solid var(--border); margin-top: 0.5rem;">
+          <form method="post" action="{{ url_for('update_material_xp_route', material_id=material.material_id) }}">
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; text-align: center;">{{ t('xp_for_completion') }}:</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 0.25rem;">
+              <input type="number" name="xp_amount" value="{{ material.material_xp_reward or 50 }}" min="0" max="1000" class="form-input" style="width: 80px; padding: 0.25rem 0.5rem; font-size: 0.85rem;" />
+              <button type="submit" class="btn btn-outline btn-sm">{{ t('save_changes') }}</button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+        <div style="padding: 0.5rem 0;">
+          <div class="lesson-item">
+            <div class="lesson-status done">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="9 12 12 15 16 10"></polyline></svg>
+            </div>
+            <div>
+              <div style="font-weight: var(--font-weight-medium);">{{ material.material_title }}</div>
+              <div class="lesson-meta">{{ material.material_views|nice_number }} {{ t('views') }}</div>
+            </div>
+          </div>
+          {% if steps and material.material_type != 'test' %}
+            {% for step in steps %}
+              {% set step_done = progress and (progress.progress_completed or progress.progress_step > loop.index0) %}
+              <div class="lesson-item">
+                <div class="lesson-status {% if step_done %}done{% endif %}">
+                  {% if step_done %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="9 12 12 15 16 10"></polyline></svg>
+                  {% else %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                  {% endif %}
+                </div>
+                <div>
+                  {% set step_type_label = {'step': t('step'), 'task': t('task'), 'point': t('point'), 'start': t('start'), 'summary': t('summary'), 'finish': t('finish')} %}
+                  {% set type_name = step_type_label.get(step.type, t('point')) if step.type else t('point') %}
+                  <div style="font-weight: var(--font-weight-medium);">{{ type_name }} {{ loop.index }}{% if step.title %}: {{ step.title }}{% endif %}</div>
+                  {% if step.description %}<div class="lesson-meta">{{ step.description|truncate(60) }}</div>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% elif steps and material.material_type == 'test' %}
+            {% for step in steps %}
+              <div class="lesson-item">
+                <div class="lesson-status {% if progress and progress.progress_completed %}done{% endif %}">
+                  {% if progress and progress.progress_completed %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="9 12 12 15 16 10"></polyline></svg>
+                  {% else %}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                  {% endif %}
+                </div>
+                <div>
+                  <div style="font-weight: var(--font-weight-medium);">{{ t('question') }} {{ loop.index }}{% if step.title %}: {{ step.title }}{% endif %}</div>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  {% if is_author or is_moderator %}
+  <!-- Delete confirmation modal -->
+  <div id="delete-modal" class="modal-overlay" onclick="if(event.target===this) closeDeleteModal()">
+    <div class="modal" role="dialog" aria-labelledby="del-title">
+      <div class="modal-head">
+        <div id="del-title" style="font-weight: var(--font-weight-medium); font-size: 1.125rem;">{{ t('delete_material_question') }}</div>
+        <button type="button" class="modal-close" onclick="closeDeleteModal()" aria-label="{{ t('close') }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{{ t('delete_material_warning').format(title=material.material_title) }}</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">{{ t('cancel') }}</button>
+          <form method="post" action="{{ url_for('delete_material_route', material_id=material.material_id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger">{{ t('delete') }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Delete comment modal -->
+  <div id="delete-comment-modal" class="modal-overlay" onclick="if(event.target===this) closeDeleteCommentModal()">
+    <div class="modal" role="dialog" aria-labelledby="del-comment-title">
+      <div class="modal-head">
+        <div id="del-comment-title" style="font-weight: var(--font-weight-medium); font-size: 1.125rem;">{{ t('delete_comment_question') }}</div>
+        <button type="button" class="modal-close" onclick="closeDeleteCommentModal()" aria-label="{{ t('close') }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{{ t('delete_comment_warning') }}</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeDeleteCommentModal()">{{ t('cancel') }}</button>
+          <form id="delete-comment-form" method="post" action="" style="display:inline;">
+            <button type="submit" class="btn btn-danger">{{ t('delete') }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const expandText = {{ t('show_full')|tojson }};
+  const collapseText = {{ t('collapse')|tojson }};
+
+  function toggleExpand(btn) {
+    var text = btn.previousElementSibling;
+    if (!text) return;
+    text.classList.toggle('collapsed');
+    btn.textContent = text.classList.contains('collapsed') ? expandText : collapseText;
+  }
+  function openDeleteModal() {
+    var m = document.getElementById('delete-modal');
+    if (m) m.classList.add('open');
+  }
+  function closeDeleteModal() {
+    var m = document.getElementById('delete-modal');
+    if (m) m.classList.remove('open');
+  }
+  function openDeleteCommentModal(url) {
+    var form = document.getElementById('delete-comment-form');
+    if (form) form.action = url;
+    var m = document.getElementById('delete-comment-modal');
+    if (m) m.classList.add('open');
+  }
+  function closeDeleteCommentModal() {
+    var m = document.getElementById('delete-comment-modal');
+    if (m) m.classList.remove('open');
+  }
+</script>
+{% endblock %}

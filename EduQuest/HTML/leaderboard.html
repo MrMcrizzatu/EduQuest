@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ t('leaderboard_title') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('leaderboard_title') }}</h1>
+    <p>{{ t('leaderboard_desc') }}</p>
+  </div>
+
+  <div class="lb-tabs">
+    <a class="lb-tab {% if active_sort == 'level' %}active{% endif %}" href="{{ url_for('leaderboard', sort='level') }}">{{ t('level') }}</a>
+    <a class="lb-tab {% if active_sort == 'rating' %}active{% endif %}" href="{{ url_for('leaderboard', sort='rating') }}">{{ t('rating') }}</a>
+    <a class="lb-tab {% if active_sort == 'completed' %}active{% endif %}" href="{{ url_for('leaderboard', sort='completed') }}">{{ t('completed_materials') }}</a>
+    <a class="lb-tab {% if active_sort == 'created' %}active{% endif %}" href="{{ url_for('leaderboard', sort='created') }}">{{ t('created_materials') }}</a>
+  </div>
+
+  <div class="lb-table-wrap">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>{{ t('place') }}</th>
+          <th>{{ t('user') }}</th>
+          <th class="col-center">{{ t('level') }}</th>
+          <th class="col-center">{{ t('rating') }}</th>
+          <th class="col-center">{{ t('completed_materials') }}</th>
+          <th class="col-center">{{ t('created_materials') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if leaders %}
+          {% for u in leaders %}
+            <tr class="row-{{ loop.index }}">
+              <td>
+                {% if loop.index == 1 %}
+                  <span class="place-cell">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+                    1
+                  </span>
+                {% elif loop.index == 2 %}
+                  <span class="place-cell">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"></circle><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path></svg>
+                    2
+                  </span>
+                {% elif loop.index == 3 %}
+                  <span class="place-cell">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"></path><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.12"></path></svg>
+                    3
+                  </span>
+                {% else %}
+                  {{ loop.index }}
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('view_user_profile', user_id=u.user_id) }}" style="text-decoration: none; color: inherit;">
+                  <div class="user-cell">
+                    <div class="avatar avatar-sm">
+                      {% if u.user_avatar_path %}
+                        <img src="{{ u.user_avatar_path }}" alt="{{ u.user_full_name }}" />
+                      {% else %}
+                        {{ u.user_full_name|avatar_initials }}
+                      {% endif %}
+                    </div>
+                    <span>{{ u.user_full_name }}</span>
+                  </div>
+                </a>
+              </td>
+              <td class="col-center">
+                <span class="rank-badge">
+                  {{ t('level') }} {{ '***' if u.setting_hide_level else u.level }} 
+                  · {{ '***' if u.setting_hide_xp else u.user_xp|nice_number }} XP
+                </span>
+              </td>
+              <td class="col-center">{{ u.rating|nice_number }}</td>
+              <td class="col-center">{{ u.completed_count }}</td>
+              <td class="col-center">{{ u.created_count }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="empty" style="padding: 2.5rem 1rem;">
+              <h3>{{ t('leaderboard_empty_title') }}</h3>
+              <p>{{ t('leaderboard_empty_text') }}</p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if your_position %}
+    <div class="your-position">
+      <div class="yp-head">{{ t('your_position') }}</div>
+      <table class="lb-table yp-table">
+        <thead>
+          <tr>
+            <th>{{ t('place') }}</th>
+            <th>{{ t('user') }}</th>
+            <th class="col-center">{{ t('level') }}</th>
+            <th class="col-center">{{ t('rating') }}</th>
+            <th class="col-center">{{ t('completed_materials') }}</th>
+            <th class="col-center">{{ t('created_materials') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="yp-row">
+            <td>{{ your_position.pos }}</td>
+            <td>
+              <div class="user-cell">
+                <div class="avatar avatar-sm">
+                  {% if your_position.avatar %}
+                    <img src="{{ your_position.avatar }}" alt="{{ your_position.name }}" />
+                  {% else %}
+                    {{ your_position.name|avatar_initials }}
+                  {% endif %}
+                </div>
+                <span>{{ your_position.name }}</span>
+              </div>
+            </td>
+            <td class="col-center"><span class="rank-badge">{{ t('level') }} {{ your_position.level }} · {{ your_position.xp|nice_number }} XP</span></td>
+            <td class="col-center">{{ your_position.rating|nice_number }}</td>
+            <td class="col-center">{{ your_position.completed }}</td>
+            <td class="col-center">{{ your_position.created }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <div class="lb-stats">
+    <div class="stat-card">
+      <div class="stat-value">{{ total_users|nice_number }}</div>
+      <div class="stat-label">{{ t('total_users') }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ leaders|length }}</div>
+      <div class="stat-label">{{ t('in_top_list') }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_completed|nice_number }}</div>
+      <div class="stat-label">{{ t('completed_top10') }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_created|nice_number }}</div>
+      <div class="stat-label">{{ t('created_top10') }}</div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ t('policy') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('policy_title') }}</h1>
+    <p>{{ t('policy_desc') }}</p>
+  </div>
+
+  <div class="card policy-card">
+    <h3>{{ t('policy_1_title') }}</h3>
+    <p>{{ t('policy_1_text') }}</p>
+
+    <h3>{{ t('policy_2_title') }}</h3>
+    <p>{{ t('policy_2_text') }}</p>
+
+    <h3>{{ t('policy_3_title') }}</h3>
+    <p>{{ t('policy_3_text') }}</p>
+
+    <h3>{{ t('policy_4_title') }}</h3>
+    <p>{{ t('policy_4_text') }}</p>
+
+    <h3>{{ t('policy_5_title') }}</h3>
+    <p>{{ t('policy_5_text') }}</p>
+
+    <h3>{{ t('policy_6_title') }}</h3>
+    <p>{{ t('policy_6_text') }}</p>
+
+    <p class="text-muted" style="margin-top: 1.5rem;">{{ t('policy_note') }}</p>
+  </div>
+{% endblock %}

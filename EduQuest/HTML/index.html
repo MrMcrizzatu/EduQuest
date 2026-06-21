@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}EduQuest — {{ t('materials_heading') }}{% endblock %}
+
+{% block content %}
+  <form action="{{ url_for('home') }}" method="get" class="mb-3">
+    {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}" />{% endif %}
+    {% if active_subcategory %}<input type="hidden" name="subcategory" value="{{ active_subcategory }}" />{% endif %}
+    {% if active_sort %}<input type="hidden" name="sort" value="{{ active_sort }}" />{% endif %}
+    <input class="search-bar" type="search" name="q" value="{{ search_query }}"
+           placeholder="{{ t('search_placeholder') }}" />
+  </form>
+
+  <h1>{{ t('materials_heading') }}</h1>
+
+  <div class="filters">
+    <a class="chip {% if active_sort != 'new' %}active{% endif %}"
+       href="{{ url_for('home', category=active_category, subcategory=active_subcategory, q=search_query or None) }}">{{ t('trending') }}</a>
+    <a class="chip {% if active_sort == 'new' %}active{% endif %}"
+       href="{{ url_for('home', sort='new', category=active_category, subcategory=active_subcategory, q=search_query or None) }}">{{ t('new') }}</a>
+
+    <form method="get" action="{{ url_for('home') }}" class="filter-form">
+      {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}" />{% endif %}
+      {% if active_sort and active_sort != 'trending' %}<input type="hidden" name="sort" value="{{ active_sort }}" />{% endif %}
+      <select name="category" class="form-select form-select-inline" onchange="this.form.submit()">
+        <option value="">{{ t('all_categories') }}</option>
+        {% for cat in top_categories %}
+          <option value="{{ cat.category_slug }}" {% if active_category == cat.category_slug %}selected{% endif %}>{{ category_label(cat.category_slug, cat.category_name) }}</option>
+        {% endfor %}
+      </select>
+
+      {% if subcategories %}
+        <select name="subcategory" class="form-select form-select-inline" onchange="this.form.submit()">
+          <option value="">{{ t('select_subcategory') }}</option>
+          {% for s in subcategories %}
+            <option value="{{ s.category_slug }}" {% if active_subcategory == s.category_slug %}selected{% endif %}>{{ category_label(s.category_slug, s.category_name) }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input type="hidden" name="subcategory" value="" />
+      {% endif %}
+    </form>
+  </div>
+
+  {% if materials %}
+    <div class="materials-grid">
+      {% for m in materials %}
+        <a class="material-card" href="{{ url_for('material_view', material_id=m.material_id) }}">
+          {% if m.material_image_path %}
+            <img class="material-thumb" src="{{ m.material_image_path }}" alt="{{ m.material_title }}" />
+          {% else %}
+            <div class="material-thumb-placeholder">{{ t('no_image') }}</div>
+          {% endif %}
+          <div class="material-body">
+            <h3 class="material-title">{{ m.material_title|truncate(80) }}</h3>
+            <div class="material-author">{{ m.author_name }}</div>
+            <div class="material-meta">
+              <span class="meta-item" title="{{ t('views') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                {{ m.material_views|nice_number }}
+              </span>
+              {% if m.rating_count and m.rating_count > 0 %}
+                <span class="meta-item" title="{{ t('rating') }}">
+                  <svg viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  {{ "%.1f"|format(m.avg_rating) }} ({{ m.rating_count }})
+                </span>
+              {% endif %}
+              <span class="meta-item">
+                {{ material_type_label(m.material_type) }}
+              </span>
+              <span class="meta-item difficulty-badge difficulty-{{ m.material_difficulty }}">
+                {{ difficulty_label(m.material_difficulty) }}
+              </span>
+            </div>
+          </div>
+          <div class="material-foot">
+            <span>
+              {% if m.top_name %}{{ category_label(m.top_slug, m.top_name) }}{% if m.sub_name %} · {{ category_label(m.sub_slug, m.sub_name) }}{% endif %}
+              {% else %}{{ t('no_category') }}{% endif %}
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      <h3>{{ t('empty_materials_title') }}</h3>
+      <p>{{ t('empty_materials_text') }}</p>
+      {% if current_user %}
+        <a class="btn btn-primary" href="{{ url_for('create_choose') }}">{{ t('create_material') }}</a>
+      {% else %}
+        <a class="btn btn-primary" href="{{ url_for('auth_page', mode='register') }}">{{ t('start_learning') }}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if not current_user and materials %}
+    <div class="cta-card">
+      <h3>{{ t('full_access_title') }}</h3>
+      <p>{{ t('full_access_text') }}</p>
+      <a class="btn btn-primary btn-lg" href="{{ url_for('auth_page', mode='register') }}">{{ t('start_learning') }}</a>
+    </div>
+  {% endif %}
+{% endblock %}

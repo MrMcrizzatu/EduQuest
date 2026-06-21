@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="{{ current_language }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}EduQuest — {{ t('materials_heading') }}{% endblock %}</title>
+  <meta name="description" content="EduQuest — {{ t('policy_1_text') }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('asset_favicons', filename='favicon.svg') }}" />
+  <link rel="stylesheet" href="{{ url_for('css_files', filename='theme.css') }}" />
+  {% if current_user %}
+    <script>
+      // Apply theme before page renders to avoid flash
+      (function() {
+        var theme = '{{ user_theme }}';
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.body.setAttribute('data-theme', 'dark');
+        }
+      })();
+      // Pass notification settings to JavaScript
+      window.userSettings = {
+        disableAllNotifications: {{ 'true' if user_settings and user_settings.setting_disable_all_notifications else 'false' }},
+        disablePopups: {{ 'false' if user_settings and user_settings.setting_notifications else 'true' }},
+        enableConfetti: {{ 'true' if user_settings and user_settings.setting_confetti else 'false' }}
+      };
+      // Pass pending notifications from session
+      {% if pending_notifications %}
+      window.pendingNotifications = {{ pending_notifications|tojson }};
+      {% endif %}
+    </script>
+  {% endif %}
+</head>
+<body{% if current_user and user_theme == 'dark' %} data-theme="dark"{% endif %}>
+
+  <!-- Right-side menu drawer -->
+  <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+  <aside id="drawer" class="drawer drawer-right" aria-hidden="true">
+    <div class="drawer-head">
+      <h2>{{ t('menu') }}</h2>
+      <button type="button" class="drawer-close" onclick="closeDrawer()" aria-label="{{ t('close') }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      {% if not current_user %}
+        <a class="drawer-link" href="{{ url_for('auth_page') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+          {{ t('login') }}
+        </a>
+      {% endif %}
+      {% if current_user %}
+        <a class="drawer-link" href="{{ url_for('profile_settings_page') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          {{ t('profile_settings') }}
+        </a>
+        <a class="drawer-link {% if request.endpoint == 'my_learning' %}active{% endif %}" href="{{ url_for('my_learning') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          {{ t('my_learning') }}
+        </a>
+      {% endif %}
+      <a class="drawer-link {% if request.endpoint == 'leaderboard' %}active{% endif %}" href="{{ url_for('leaderboard') }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+        {{ t('leaderboard') }}
+      </a>
+      {% if current_user %}
+        <a class="drawer-link {% if request.endpoint == 'shop_page' %}active{% endif %}" href="{{ url_for('shop_page') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          {{ t('shop') }}
+        </a>
+        <a class="drawer-link {% if request.endpoint == 'topup_page' %}active{% endif %}" href="{{ url_for('topup_page') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          {{ t('topup_balance') }}
+        </a>
+        <a class="drawer-link {% if request.endpoint == 'settings_page' %}active{% endif %}" href="{{ url_for('settings_page') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.21.61.78 1.04 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          {{ t('settings') }}
+        </a>
+      {% endif %}
+      <a class="drawer-link {% if request.endpoint == 'policy_page' %}active{% endif %}" href="{{ url_for('policy_page') }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        {{ t('policy') }}
+      </a>
+      <a class="drawer-link {% if request.endpoint == 'support_page' %}active{% endif %}" href="{{ url_for('support_page') }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        {{ t('support') }}
+      </a>
+      {% if current_user and is_moderator %}
+        <a class="drawer-link" href="{{ url_for('moderation_page') }}" style="color: #f59e0b;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          {{ t('moderation') }}
+        </a>
+      {% endif %}
+      {% if current_user %}
+        <a class="drawer-link drawer-link-danger" href="{{ url_for('auth_logout') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          {{ t('logout') }}
+        </a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a class="brand" href="{{ url_for('home') }}">
+          <img src="{{ url_for('asset_logos', filename='Logo.svg') }}" alt="EduQuest" />
+          <span class="brand-name">EduQuest</span>
+        </a>
+      </div>
+
+      <nav class="header-nav">
+        {% if current_user %}
+          <div class="nav-link" style="pointer-events: none; padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 600; color: var(--primary); white-space: nowrap;">{{ t('level_short') }} {{ current_user.user_xp|level }}</span>
+              <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 80px;">
+                {% set h_level = current_user.user_xp|level %}
+                {% set h_xp_in = current_user.user_xp - ([0, (100 * h_level * (h_level + 1) / 2)]|max|int) %}
+                {% set h_xp_need = (h_level + 1) * 100 %}
+                <div style="font-size: 0.7rem; color: var(--muted-foreground); white-space: nowrap;">{{ h_xp_in|int }} / {{ h_xp_need }} XP</div>
+                <div style="height: 4px; background: var(--secondary); border-radius: 2px; overflow: hidden;">
+                  <div style="height: 100%; background: var(--primary); border-radius: 2px; width: {{ (h_xp_in / h_xp_need * 100) if h_xp_need else 0 }}%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="nav-link" style="pointer-events: none; padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.3rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>
+              <span style="font-weight: 600;">{{ current_user.user_educoins or 0 }}</span>
+            </div>
+          </div>
+          <a class="nav-link create-btn btn btn-primary btn-sm" href="{{ url_for('create_choose') }}" style="color: var(--primary-foreground);">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>{{ t('create') }}</span>
+          </a>
+          <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">
+            {% if current_user.user_avatar_path %}
+              <img src="{{ current_user.user_avatar_path }}" alt="{{ current_user.user_full_name }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
+            {% else %}
+              <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary); color: var(--primary-foreground); display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600;">
+                {{ current_user.user_full_name|avatar_initials }}
+              </div>
+            {% endif %}
+          </a>
+        {% else %}
+          <select class="form-select form-select-sm" style="width: auto; margin-right: 0.5rem;" onchange="window.location.href='/set_language/' + this.value">
+            <option value="ru" {% if session.get('language') == 'ru' %}selected{% endif %}>RU</option>
+            <option value="en" {% if session.get('language') == 'en' %}selected{% endif %}>EN</option>
+            <option value="kk" {% if session.get('language') == 'kk' %}selected{% endif %}>KZ</option>
+          </select>
+          <a class="nav-link" href="{{ url_for('auth_page') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            <span>{{ t('login') }}</span>
+          </a>
+        {% endif %}
+        <button type="button" class="menu-toggle menu-toggle-right" onclick="openDrawer()" aria-label="{{ t('open_menu') }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flash messages -->
+  {% if not (current_user and user_settings and user_settings.setting_disable_all_notifications) %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-list" id="flash-list">
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">
+            {{ msg }}
+            <button type="button" class="flash-close" onclick="this.parentElement.remove()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% endif %}
+
+  <main class="main-wrap">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      {{ t('footer_text') }}
+    </div>
+  </footer>
+
+  <script>
+    window.eduQuestText = {
+      genericError: {{ t('generic_error')|tojson }},
+      connectionError: {{ t('connection_error')|tojson }},
+      notificationOk: {{ t('notification_ok')|tojson }},
+      levelUpTitle: {{ t('level_up_title')|tojson }},
+      levelUpMessage: {{ t('level_up_message')|tojson }},
+      achievementTitle: {{ t('achievement_title')|tojson }},
+      badgeTitle: {{ t('badge_title')|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('js_files', filename='app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+{% block title %}{{ t('settings') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('settings') }}</h1>
+    <p>{{ t('settings_desc') }}</p>
+  </div>
+
+  <div class="card" style="max-width: 800px; margin: 0 auto;">
+    <form method="post" action="{{ url_for('update_settings') }}">
+      <h2>{{ t('appearance') }}</h2>
+      <div class="form-group">
+        <label class="form-label">{{ t('theme') }}</label>
+        <select name="theme" class="form-select">
+          <option value="light" {% if settings.setting_theme == 'light' %}selected{% endif %}>{{ t('light') }}</option>
+          <option value="dark" {% if settings.setting_theme == 'dark' %}selected{% endif %}>{{ t('dark') }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ t('language') }}</label>
+        <select name="language" class="form-select">
+          <option value="ru" {% if settings.setting_language == 'ru' %}selected{% endif %}>RU</option>
+          <option value="en" {% if settings.setting_language == 'en' %}selected{% endif %}>English</option>
+          <option value="kk" {% if settings.setting_language == 'kk' %}selected{% endif %}>KZ</option>
+        </select>
+        <span class="form-hint">{{ t('interface_language') }}</span>
+      </div>
+
+      <h2 style="margin-top: 2rem;">{{ t('notifications') }}</h2>
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="disable_popups" value="1" {% if not settings.setting_notifications %}checked{% endif %} />
+          <span>{{ t('disable_popups') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="enable_confetti" value="1" {% if settings.setting_confetti %}checked{% endif %} />
+          <span>{{ t('enable_confetti') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="disable_all_notifications" value="1" {% if settings.setting_disable_all_notifications %}checked{% endif %} />
+          <span>{{ t('disable_all_notifications') }}</span>
+        </label>
+        <span class="form-hint">{{ t('disable_all_notifications_hint') }}</span>
+      </div>
+
+      <h2 style="margin-top: 2rem;">{{ t('privacy') }}</h2>
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_level" value="1" {% if settings.setting_hide_level %}checked{% endif %} />
+          <span>{{ t('hide_level') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_xp" value="1" {% if settings.setting_hide_xp %}checked{% endif %} />
+          <span>{{ t('hide_xp') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_avatar" value="1" {% if settings.setting_hide_avatar %}checked{% endif %} />
+          <span>{{ t('hide_avatar') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_achievements" value="1" {% if settings.setting_hide_achievements %}checked{% endif %} />
+          <span>{{ t('hide_achievements') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_badges" value="1" {% if settings.setting_hide_badges %}checked{% endif %} />
+          <span>{{ t('hide_badges') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_streak" value="1" {% if settings.setting_hide_streak %}checked{% endif %} />
+          <span>{{ t('hide_streak') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_stats" value="1" {% if settings.setting_hide_stats %}checked{% endif %} />
+          <span>{{ t('hide_stats') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_leaderboard" value="1" {% if settings.setting_hide_leaderboard %}checked{% endif %} />
+          <span>{{ t('hide_leaderboard') }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" name="hide_profile" id="hide-profile-all" value="1" {% if settings.setting_hide_profile %}checked{% endif %} onchange="toggleAllPrivacy(this.checked)" />
+          <span>{{ t('hide_profile') }}</span>
+        </label>
+        <span class="form-hint">{{ t('hide_profile_hint') }}</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="margin-top: 1.5rem;">{{ t('save_settings') }}</button>
+    </form>
+
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);" />
+
+    <h2>{{ t('account') }}</h2>
+    <div class="form-group">
+      <label class="form-label">{{ t('linked_email') }}</label>
+      <div class="account-field-row">
+        <input class="form-input" type="text" value="{{ current_user.user_email }}" readonly />
+        <button type="button" class="btn btn-outline btn-sm" onclick="openChangeEmailModal()">{{ t('change') }}</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">{{ t('password') }}</label>
+      <div class="account-field-row">
+        <div class="password-wrapper account-password-field">
+          <input class="form-input" type="password" value="••••••••" id="settings-pass-field" readonly data-mask-value="••••••••" data-safe-value="{{ t('password_hidden') }}" />
+          <button type="button" class="password-toggle" onclick="togglePasswordView(this)" aria-label="{{ t('show_password_status') }}" title="{{ t('password_hash_hint') }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openChangePasswordModal()">{{ t('change') }}</button>
+      </div>
+    </div>
+
+    {% if not is_moderator %}
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);" />
+
+    <h2>{{ t('danger_zone') }}</h2>
+    <p style="color: var(--muted-foreground); margin-bottom: 1rem;">{{ t('delete_account_warning') }}</p>
+    <button type="button" class="btn btn-danger" onclick="openDeleteAccountModal()">{{ t('delete_account_btn') }}</button>
+    {% endif %}
+  </div>
+
+  <!-- Change Email Modal -->
+  <div id="change-email-modal" class="modal-overlay" onclick="if(event.target===this) closeChangeEmailModal()">
+    <div class="modal" role="dialog">
+      <div class="modal-head">
+        <div style="font-weight: var(--font-weight-medium); font-size: 1.125rem;">{{ t('change_email') }}</div>
+        <button type="button" class="modal-close" onclick="closeChangeEmailModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">{{ t('new_email') }}</label>
+          <input type="email" id="new-email" class="form-input" placeholder="{{ t('new_email_placeholder') }}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('verification_code') }}</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="change-email-code" class="form-input" placeholder="{{ t('code') }}" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="requestCode('email')">{{ t('get_code') }}</button>
+          </div>
+        </div>
+        <div id="change-email-error" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeChangeEmailModal()">{{ t('cancel') }}</button>
+          <button type="button" class="btn btn-primary" onclick="confirmChangeEmail()">{{ t('save_changes') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="change-password-modal" class="modal-overlay" onclick="if(event.target===this) closeChangePasswordModal()">
+    <div class="modal" role="dialog">
+      <div class="modal-head">
+        <div style="font-weight: var(--font-weight-medium); font-size: 1.125rem;">{{ t('change_password') }}</div>
+        <button type="button" class="modal-close" onclick="closeChangePasswordModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">{{ t('new_password') }}</label>
+          <div class="password-wrapper">
+            <input type="password" id="new-password" class="form-input" placeholder="{{ t('auth_min_password') }}" />
+            <button type="button" class="password-toggle" onclick="togglePass('new-password', this)" aria-label="{{ t('auth_show_password') }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('auth_repeat_password') }}</label>
+          <div class="password-wrapper">
+            <input type="password" id="confirm-new-password" class="form-input" placeholder="{{ t('auth_repeat_password') }}" />
+            <button type="button" class="password-toggle" onclick="togglePass('confirm-new-password', this)" aria-label="{{ t('auth_show_password') }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('verification_code') }}</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="change-password-code" class="form-input" placeholder="{{ t('code') }}" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="requestCode('password')">{{ t('get_code') }}</button>
+          </div>
+        </div>
+        <div id="change-password-error" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeChangePasswordModal()">{{ t('cancel') }}</button>
+          <button type="button" class="btn btn-primary" onclick="confirmChangePassword()">{{ t('save_changes') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete account modal -->
+  <div id="delete-account-modal" class="modal-overlay" onclick="if(event.target===this) closeDeleteAccountModal()">
+    <div class="modal" role="dialog" aria-labelledby="del-acc-title">
+      <div class="modal-head">
+        <div id="del-acc-title" style="font-weight: var(--font-weight-medium); font-size: 1.125rem;">{{ t('delete_account_question') }}</div>
+        <button type="button" class="modal-close" onclick="closeDeleteAccountModal()" aria-label="{{ t('close') }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{{ t('delete_account_confirm') }}</p>
+        <p style="color: var(--destructive); font-weight: var(--font-weight-medium);">{{ t('delete_account_all_data') }}</p>
+        
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <label class="form-label">{{ t('enter_email_code') }}</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="del-acc-code" class="form-input" placeholder="{{ t('code') }}" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="requestDeleteCode()">{{ t('get_code') }}</button>
+          </div>
+          <p id="del-acc-msg" class="form-hint hidden"></p>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeDeleteAccountModal()">{{ t('cancel') }}</button>
+          <button type="button" class="btn btn-danger" onclick="confirmDeleteAccount()">{{ t('delete_account_btn') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const eyeIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  const eyeOffIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+  const settingsText = {
+    showPassword: {{ t('auth_show_password')|tojson }},
+    hidePassword: {{ t('hide_password')|tojson }},
+    codeSent: {{ t('code_sent')|tojson }},
+    codeRequestError: {{ t('code_request_error')|tojson }},
+    serverError: {{ t('auth_server_error')|tojson }},
+    fillAllFields: {{ t('fill_all_fields')|tojson }},
+    passwordsMismatch: {{ t('auth_passwords_mismatch')|tojson }},
+    enterCode: {{ t('auth_enter_code')|tojson }}
+  };
+
+  function setPasswordToggleIcon(btn, visible) {
+    if (!btn) return;
+    btn.innerHTML = visible ? eyeOffIcon : eyeIcon;
+    btn.setAttribute('aria-label', visible ? settingsText.hidePassword : settingsText.showPassword);
+  }
+
+  function toggleAllPrivacy(checked) {
+    const privacyCheckboxes = [
+      'hide_level', 'hide_xp', 'hide_avatar', 'hide_achievements', 
+      'hide_badges', 'hide_streak', 'hide_stats', 'hide_leaderboard'
+    ];
+    privacyCheckboxes.forEach(name => {
+      const cb = document.querySelector(`input[name="${name}"]`);
+      if (cb) cb.checked = checked;
+    });
+  }
+
+  function togglePasswordView(btn) {
+    var f = document.getElementById('settings-pass-field');
+    var showSafeText = f.dataset.visible !== 'true';
+    f.type = showSafeText ? 'text' : 'password';
+    f.value = showSafeText ? f.dataset.safeValue : f.dataset.maskValue;
+    f.dataset.visible = showSafeText ? 'true' : 'false';
+    setPasswordToggleIcon(btn, showSafeText);
+  }
+
+  function togglePass(id, btn) {
+    var f = document.getElementById(id);
+    var isPass = f.type === 'password';
+    f.type = isPass ? 'text' : 'password';
+    setPasswordToggleIcon(btn, isPass);
+  }
+
+  function openChangeEmailModal() { document.getElementById('change-email-modal').classList.add('open'); }
+  function closeChangeEmailModal() { document.getElementById('change-email-modal').classList.remove('open'); }
+  
+  function openChangePasswordModal() { document.getElementById('change-password-modal').classList.add('open'); }
+  function closeChangePasswordModal() { document.getElementById('change-password-modal').classList.remove('open'); }
+
+  function openDeleteAccountModal() {
+    var m = document.getElementById('delete-account-modal');
+    if (m) m.classList.add('open');
+  }
+  function closeDeleteAccountModal() {
+    var m = document.getElementById('delete-account-modal');
+    if (m) m.classList.remove('open');
+  }
+
+  async function requestCode(type) {
+    try {
+      const res = await fetch('/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: '{{ current_user.user_email }}', mode: 'change_' + type })
+      });
+      const result = await res.json();
+      if (result.ok) {
+        alert(result.message || settingsText.codeSent);
+      } else {
+        alert(result.error || settingsText.codeRequestError);
+      }
+    } catch (e) { alert(settingsText.serverError); }
+  }
+
+  async function confirmChangeEmail() {
+    const newEmail = document.getElementById('new-email').value;
+    const code = document.getElementById('change-email-code').value;
+    const errorDiv = document.getElementById('change-email-error');
+    
+    if (!newEmail || !code) {
+      errorDiv.textContent = settingsText.fillAllFields;
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const res = await fetch('/settings/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail, code: code })
+      });
+      const result = await res.json();
+      if (result.ok) {
+        location.reload();
+      } else {
+        errorDiv.textContent = result.error;
+        errorDiv.classList.remove('hidden');
+      }
+    } catch (e) { errorDiv.textContent = settingsText.serverError; errorDiv.classList.remove('hidden'); }
+  }
+
+  async function confirmChangePassword() {
+    const pass = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-new-password').value;
+    const code = document.getElementById('change-password-code').value;
+    const errorDiv = document.getElementById('change-password-error');
+
+    if (!pass || !confirm || !code) {
+      errorDiv.textContent = settingsText.fillAllFields;
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+    if (pass !== confirm) {
+      errorDiv.textContent = settingsText.passwordsMismatch;
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const res = await fetch('/settings/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pass, code: code })
+      });
+      const result = await res.json();
+      if (result.ok) {
+        location.reload();
+      } else {
+        errorDiv.textContent = result.error;
+        errorDiv.classList.remove('hidden');
+      }
+    } catch (e) { errorDiv.textContent = settingsText.serverError; errorDiv.classList.remove('hidden'); }
+  }
+
+  async function requestDeleteCode() {
+    try {
+      const res = await fetch('/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: '{{ current_user.user_email }}', mode: 'delete_account' })
+      });
+      const result = await res.json();
+      const msg = document.getElementById('del-acc-msg');
+      msg.classList.remove('hidden');
+      if (result.ok) {
+        msg.textContent = result.message || settingsText.codeSent;
+        msg.style.color = 'var(--primary)';
+      } else {
+        msg.textContent = result.error;
+        msg.style.color = 'var(--destructive)';
+      }
+    } catch (e) { alert(settingsText.serverError); }
+  }
+
+  async function confirmDeleteAccount() {
+    const code = document.getElementById('del-acc-code').value;
+    if (!code) { alert(settingsText.enterCode); return; }
+
+    try {
+      const res = await fetch('/settings/delete-account-secure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code })
+      });
+      const result = await res.json();
+      if (result.ok) {
+        window.location.href = result.redirect || '/';
+      } else {
+        alert(result.error);
+      }
+    } catch (e) { alert(settingsText.serverError); }
+  }
+</script>
+{% endblock %}

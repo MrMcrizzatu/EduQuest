@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ t('users_title') }} — {{ t('moderation') }} — EduQuest{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ t('user_management') }}</h1>
+    <p>{{ t('all_registered_users') }}</p>
+    <div style="margin-top: 0.5rem;">
+      <a class="btn btn-outline btn-sm" href="{{ url_for('moderation_page') }}">← {{ t('back_to_moderation') }}</a>
+    </div>
+  </div>
+
+  <div style="max-width: 900px; margin: 0 auto;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+          <th style="padding: 0.75rem 0.5rem;">ID</th>
+          <th style="padding: 0.75rem 0.5rem;">{{ t('name') }}</th>
+          <th style="padding: 0.75rem 0.5rem;">Email</th>
+          <th style="padding: 0.75rem 0.5rem;">{{ t('role') }}</th>
+          <th style="padding: 0.75rem 0.5rem;">XP</th>
+          <th style="padding: 0.75rem 0.5rem;">{{ t('actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 0.75rem 0.5rem;">{{ u.user_id }}</td>
+            <td style="padding: 0.75rem 0.5rem;">
+              <a href="{{ url_for('view_user_profile', user_id=u.user_id) }}" style="color: var(--primary); text-decoration: none;">{{ u.user_full_name }}</a>
+            </td>
+            <td style="padding: 0.75rem 0.5rem; font-size: 0.85rem;">{{ u.user_email }}</td>
+            <td style="padding: 0.75rem 0.5rem;">
+              {% if u.user_role == 'moderator' %}
+                <span style="background: #f59e0b; color: #fff; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;">{{ t('moderator') }}</span>
+              {% else %}
+                <span style="font-size: 0.85rem;">{{ t('regular_user') }}</span>
+              {% endif %}
+            </td>
+            <td style="padding: 0.75rem 0.5rem;">{{ u.user_xp }}</td>
+            <td style="padding: 0.75rem 0.5rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <a class="btn btn-outline btn-sm" href="{{ url_for('view_user_profile', user_id=u.user_id) }}">{{ t('profile') }}</a>
+                <form method="post" action="{{ url_for('award_xp_route', user_id=u.user_id) }}" style="display: flex; gap: 0.25rem; align-items: center;">
+                  <input type="number" name="xp_amount" value="50" min="1" max="10000" class="form-input" style="width: 70px; padding: 0.2rem 0.4rem; font-size: 0.8rem;" />
+                  <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.75rem;">+XP</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
